@@ -1,0 +1,132 @@
+{
+  "hosts": [
+    {
+      "id": 1,
+      "name": "Gateway Principal",
+      "address": "192.168.1.1"
+    },
+    {
+      "id": 2,
+      "name": "DNS Google",
+      "address": "8.8.8.8"
+    },
+    {
+      "id": 3,
+      "name": "Servidor de Impressao",
+      "address": "192.168.1.50"
+    },
+    {
+      "id": 4,
+      "name": "Cloudflare DNS",
+      "address": "1.1.1.1"
+    }
+  ],
+  "pings": [
+    {
+      "id": 1,
+      "createdAt": "2026-09-24T10:48:00Z",
+      "hostId": 1
+    },
+    {
+      "id": 2,
+      "createdAt": "2026-09-24T10:47:58Z",
+      "hostId": 2
+    },
+    {
+      "id": 3,
+      "createdAt": "2026-09-24T10:47:55Z",
+      "hostId": 3
+    },
+    {
+      "id": 4,
+      "createdAt": "2026-09-24T10:47:52Z",
+      "hostId": 4
+    }
+  ],
+  "icmps": [
+    {
+      "id": 1,
+      "seq": 1,
+      "ttl": 64,
+      "time": 2,
+      "pingId": 1
+    },
+    {
+      "id": 2,
+      "seq": 2,
+      "ttl": 64,
+      "time": 3,
+      "pingId": 1
+    },
+    {
+      "id": 3,
+      "seq": 3,
+      "ttl": 64,
+      "time": 2,
+      "pingId": 1
+    },
+    {
+      "id": 4,
+      "seq": 1,
+      "ttl": 54,
+      "time": 18,
+      "pingId": 2
+    },
+    {
+      "id": 5,
+      "seq": 2,
+      "ttl": 54,
+      "time": 15,
+      "pingId": 2
+    },
+    {
+      "id": 6,
+      "seq": 3,
+      "ttl": 54,
+      "time": 45,
+      "pingId": 2
+    },
+    {
+      "id": 7,
+      "seq": 1,
+      "ttl": 0,
+      "time": null,
+      "pingId": 3
+    },
+    {
+      "id": 8,
+      "seq": 2,
+      "ttl": 0,
+      "time": null,
+      "pingId": 3
+    },
+    {
+      "id": 9,
+      "seq": 3,
+      "ttl": 0,
+      "time": null,
+      "pingId": 3
+    },
+    {
+      "id": 10,
+      "seq": 1,
+      "ttl": 56,
+      "time": 14,
+      "pingId": 4
+    },
+    {
+      "id": 11,
+      "seq": 2,
+      "ttl": 56,
+      "time": 13,
+      "pingId": 4
+    },
+    {
+      "id": 12,
+      "seq": 3,
+      "ttl": 56,
+      "time": 15,
+      "pingId": 4
+    }
+  ]
+}
