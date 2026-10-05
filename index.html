@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -20,7 +21,7 @@
             <span>Net<span style="color: var(--accent-cyan);">Guard</span></span>
         </div>
         <div class="header-actions">
-            <button class="btn-primary" type="button" onclick="openModal()">+ Cadastrar Host</button>
+            <button class="btn-primary" type="button" id="btnCadastrarHost">+ Cadastrar Host</button>
         </div>
     </header>
 
@@ -89,13 +90,13 @@
                     <input type="text" id="hostAddress" placeholder="Ex: 192.168.1.100" required>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+                    <button type="button" class="btn-cancel" id="btnCancelar">Cancelar</button>
                     <button type="submit" class="btn-primary">Salvar Host</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script type="module" src="./js/app.js"></script>
 </body>
 </html>
