@@ -302,3 +302,18 @@ td:last-child {
     height: 280px; 
     position: relative; 
 }
+.btn-edit {
+    background: rgba(59, 130, 246, 0.18);
+    color: var(--accent-blue);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.btn-edit:hover {
+    background: rgba(59, 130, 246, 0.35);
+}
