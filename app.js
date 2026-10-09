@@ -1,308 +1,470 @@
-/*
-====================================================
-IMPORTAÇÃO DOS MÓDULOS
-====================================================
-*/
-
 import {
     getDashboardData,
     createHost,
-    updateHost,
     deleteHost
-} from "./api.js";
+} from './api.js';
+
+let latencyChart = null;
 
 
-import {
-    initChart,
-    renderDashboard,
-    prepararCadastro,
-    prepararEdicao,
-    closeModal,
-    mostrarErro
-} from "./ui.js";
+// ============================================
+// GRÁFICO
+// ============================================
+
+function initChart() {
+    const canvas = document.getElementById('latencyChart');
+
+    if (!canvas) {
+        console.error('Canvas latencyChart não encontrado.');
+        return;
+    }
+
+    const ctx = canvas.getContext('2d');
+
+    latencyChart = new Chart(ctx, {
+        type: 'line',
+
+        data: {
+            labels: [],
+
+            datasets: [{
+                label: 'Latência (ms)',
+                data: [],
+                borderColor: '#06b6d4',
+                backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
 
 
-/*
-====================================================
-CARREGAMENTO DO DASHBOARD
-====================================================
-*/
+// ============================================
+// BUSCAR DADOS DA API
+// ============================================
 
 async function carregarDashboard() {
 
     try {
 
-        const {
-            hosts,
-            pings,
-            icmps
-        } = await getDashboardData();
+        const dados = await getDashboardData();
 
+        const hosts = dados.hosts;
+        const pings = dados.pings;
+        const icmps = dados.icmps;
 
-        renderDashboard(
-            hosts,
-            pings,
-            icmps,
-            {
-                onEdit: editarHost,
-                onDelete: excluirHost
-            }
-        );
+        renderDashboard(hosts, pings, icmps);
 
-
-    } catch (error) {
+    } catch (erro) {
 
         console.error(
-            "Erro ao carregar dashboard:",
-            error
+            'Erro ao carregar os dados do NetGuard:',
+            erro
         );
 
+        const tbody = document.getElementById('hostsTableBody');
 
-        mostrarErro(
-            "Não foi possível carregar os dados. Verifique se o JSON Server está funcionando."
-        );
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align:center;">
+                    Erro ao conectar com a API.
+                </td>
+            </tr>
+        `;
     }
 }
 
 
-/*
-====================================================
-EVENTO - CADASTRAR HOST
-====================================================
-*/
+// ============================================
+// MOSTRAR DADOS NA TELA
+// ============================================
 
-const btnCadastrar =
-    document.getElementById(
-        "btnCadastrarHost"
-    );
+function renderDashboard(hosts, pings, icmps) {
 
+    const tbody =
+        document.getElementById('hostsTableBody');
 
-if (btnCadastrar) {
+    tbody.innerHTML = '';
 
-    btnCadastrar.addEventListener(
-        "click",
-        () => {
+    let onlineCount = 0;
+    let offlineCount = 0;
 
-            prepararCadastro();
-
-        }
-    );
-}
+    let totalLatency = 0;
+    let validLatencyCount = 0;
 
 
-/*
-====================================================
-EVENTO - CANCELAR MODAL
-====================================================
-*/
+    hosts.forEach((host) => {
 
-const btnCancelar =
-    document.getElementById(
-        "btnCancelar"
-    );
+        // Procura os pings pertencentes ao host
+        const hostPings = pings.filter(
+            (ping) => ping.hostId === host.id
+        );
 
-
-if (btnCancelar) {
-
-    btnCancelar.addEventListener(
-        "click",
-        () => {
-
-            closeModal();
-
-        }
-    );
-}
+        const lastPing =
+            hostPings[hostPings.length - 1];
 
 
-/*
-====================================================
-EVENTO - SUBMIT DO FORMULÁRIO
-POST OU PATCH
-====================================================
-*/
-
-const hostForm =
-    document.getElementById(
-        "hostForm"
-    );
+        let isOnline = false;
+        let lastLatency = null;
 
 
-hostForm.addEventListener(
-    "submit",
-    async event => {
+        if (lastPing) {
 
-        event.preventDefault();
-
-
-        const name =
-            document
-                .getElementById(
-                    "hostName"
-                )
-                .value
-                .trim();
-
-
-        const address =
-            document
-                .getElementById(
-                    "hostAddress"
-                )
-                .value
-                .trim();
-
-
-        if (
-            name === "" ||
-            address === ""
-        ) {
-
-            mostrarErro(
-                "Preencha todos os campos."
+            // Procura os ICMPs daquele ping
+            const pingIcmps = icmps.filter(
+                (icmp) => icmp.pingId === lastPing.id
             );
 
-            return;
-        }
+            const lastIcmp =
+                pingIcmps[pingIcmps.length - 1];
 
 
-        const editId =
-            hostForm.dataset.editId;
+            if (
+                lastIcmp &&
+                lastIcmp.time !== null
+            ) {
 
+                isOnline = true;
 
-        try {
+                lastLatency = lastIcmp.time;
 
-            /*
-            Se existe editId,
-            fazemos PATCH.
-            */
+                totalLatency += lastLatency;
 
-            if (editId) {
-
-                await updateHost(
-                    editId,
-                    {
-                        name,
-                        address
-                    }
-                );
-
-            } else {
-
-                /*
-                Caso contrário,
-                fazemos POST.
-                */
-
-                await createHost({
-                    name,
-                    address
-                });
+                validLatencyCount++;
             }
-
-
-            hostForm.reset();
-
-            hostForm.dataset.editId = "";
-
-            closeModal();
-
-            await carregarDashboard();
-
-
-        } catch (error) {
-
-            console.error(
-                "Erro ao salvar host:",
-                error
-            );
-
-
-            mostrarErro(
-                "Não foi possível salvar o host."
-            );
         }
-    }
-);
 
 
-/*
-====================================================
-EDIÇÃO
-====================================================
-*/
+        if (isOnline) {
+            onlineCount++;
+        } else {
+            offlineCount++;
+        }
 
-function editarHost(host) {
 
-    prepararEdicao(host);
+        // Cria a linha da tabela
+        const tr = document.createElement('tr');
 
+
+        tr.innerHTML = `
+            <td>
+
+                <span class="
+                    badge
+                    ${isOnline
+                        ? 'badge-online'
+                        : 'badge-offline'}
+                ">
+
+                    ${isOnline
+                        ? 'ONLINE'
+                        : 'OFFLINE'}
+
+                </span>
+
+            </td>
+
+            <td>
+                ${host.name}
+            </td>
+
+            <td>
+                <span class="ip-code">
+                    ${host.address}
+                </span>
+            </td>
+
+            <td>
+                ${
+                    lastLatency !== null
+                        ? `${lastLatency} ms`
+                        : '--'
+                }
+            </td>
+
+            <td>
+                <button
+                    type="button"
+                    class="btn-danger"
+                    data-id="${host.id}"
+                >
+                    Excluir
+                </button>
+            </td>
+        `;
+
+
+        tbody.appendChild(tr);
+    });
+
+
+    // ========================================
+    // ATUALIZA OS CARDS
+    // ========================================
+
+    document.getElementById(
+        'totalHosts'
+    ).textContent = hosts.length;
+
+
+    document.getElementById(
+        'onlineHosts'
+    ).textContent = onlineCount;
+
+
+    document.getElementById(
+        'offlineHosts'
+    ).textContent = offlineCount;
+
+
+    document.getElementById(
+        'avgLatency'
+    ).textContent =
+
+        validLatencyCount > 0
+
+            ? `${Math.round(
+                totalLatency /
+                validLatencyCount
+            )} ms`
+
+            : '-- ms';
+
+
+    // ========================================
+    // ATUALIZA O GRÁFICO
+    // ========================================
+
+    atualizarGrafico(icmps);
+
+
+    // ========================================
+    // BOTÕES EXCLUIR
+    // ========================================
+
+    const botoesExcluir =
+        document.querySelectorAll('.btn-danger');
+
+
+    botoesExcluir.forEach((botao) => {
+
+        botao.addEventListener(
+            'click',
+            async () => {
+
+                const id = botao.dataset.id;
+
+                const confirmar =
+                    confirm(
+                        'Deseja excluir este host?'
+                    );
+
+
+                if (!confirmar) {
+                    return;
+                }
+
+
+                try {
+
+                    await deleteHost(id);
+
+                    await carregarDashboard();
+
+                } catch (erro) {
+
+                    console.error(
+                        'Erro ao excluir host:',
+                        erro
+                    );
+                }
+            }
+        );
+    });
 }
 
 
-/*
-====================================================
-EXCLUSÃO
-====================================================
-*/
+// ============================================
+// ATUALIZAR GRÁFICO
+// ============================================
 
-async function excluirHost(id) {
+function atualizarGrafico(icmps) {
 
-    const confirmar =
-        confirm(
-            "Deseja remover este host do monitoramento?"
-        );
-
-
-    if (!confirmar) {
+    if (!latencyChart) {
         return;
     }
 
 
-    try {
+    const validIcmps = icmps
+        .filter(
+            (icmp) => icmp.time !== null
+        )
+        .slice(-10);
 
-        await deleteHost(id);
 
-        await carregarDashboard();
-
-
-    } catch (error) {
-
-        console.error(
-            "Erro ao excluir host:",
-            error
+    latencyChart.data.labels =
+        validIcmps.map(
+            (icmp) => `Seq ${icmp.seq}`
         );
 
 
-        mostrarErro(
-            "Não foi possível excluir o host."
+    latencyChart.data.datasets[0].data =
+        validIcmps.map(
+            (icmp) => icmp.time
         );
-    }
+
+
+    latencyChart.update();
 }
 
 
-/*
-====================================================
-INICIALIZAÇÃO
-====================================================
-*/
+// ============================================
+// MODAL
+// ============================================
 
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
+function abrirModal() {
 
-        initChart();
+    const modal =
+        document.getElementById('hostModal');
 
-        carregarDashboard();
+    modal.style.display = 'flex';
+}
 
 
-        /*
-        Atualização automática
-        a cada 5 segundos.
-        */
+function fecharModal() {
 
-        setInterval(
-            carregarDashboard,
-            5000
-        );
-    }
+    const modal =
+        document.getElementById('hostModal');
+
+    modal.style.display = 'none';
+
+
+    document
+        .getElementById('hostForm')
+        .reset();
+}
+
+
+// ============================================
+// BOTÃO CADASTRAR HOST
+// ============================================
+
+document
+    .getElementById('btnCadastrarHost')
+    .addEventListener(
+        'click',
+        abrirModal
+    );
+
+
+// ============================================
+// BOTÃO CANCELAR
+// ============================================
+
+document
+    .getElementById('btnCancelar')
+    .addEventListener(
+        'click',
+        fecharModal
+    );
+
+
+// ============================================
+// CADASTRAR NOVO HOST
+// ============================================
+
+document
+    .getElementById('hostForm')
+    .addEventListener(
+        'submit',
+        async (event) => {
+
+            event.preventDefault();
+
+
+            const name =
+                document
+                    .getElementById('hostName')
+                    .value
+                    .trim();
+
+
+            const address =
+                document
+                    .getElementById('hostAddress')
+                    .value
+                    .trim();
+
+
+            if (!name || !address) {
+
+                alert(
+                    'Preencha o nome e o endereço do host.'
+                );
+
+                return;
+            }
+
+
+            try {
+
+                await createHost({
+                    name: name,
+                    address: address
+                });
+
+
+                fecharModal();
+
+
+                await carregarDashboard();
+
+
+            } catch (erro) {
+
+                console.error(
+                    'Erro ao cadastrar host:',
+                    erro
+                );
+
+
+                alert(
+                    'Não foi possível cadastrar o host.'
+                );
+            }
+        }
+    );
+
+
+// ============================================
+// INICIALIZAÇÃO
+// ============================================
+
+initChart();
+
+carregarDashboard();
+
+
+// Atualiza os dados a cada 5 segundos
+setInterval(
+    carregarDashboard,
+    5000
 );
